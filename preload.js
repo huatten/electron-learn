@@ -1,4 +1,4 @@
-const {contextBridge} = require('electron')
+const {contextBridge,ipcRenderer} = require('electron')
 
 /**
  * 1. 引入 contextBridge 用于安全地在主进程和渲染进程之间暴露 暴露版本信息
@@ -17,5 +17,5 @@ contextBridge.exposeInMainWorld('versions', {
     chrome: () => process.versions.chrome,
     electron: () => process.versions.electron,
     // we can also expose variables, not just functions
-    ping: () => 'pong'
+    ping: () => ipcRenderer.invoke('ping')
 })
