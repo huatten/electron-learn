@@ -11,3 +11,11 @@ const receiveFun = async() => {
 }
 
 receiveFun()
+
+
+const inputElement = document.getElementById('input');
+const btnElement = document.getElementById('btn');
+
+btnElement.addEventListener('click', () => {
+    window.electron.setTitle(inputElement.value)
+})

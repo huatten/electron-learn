@@ -19,3 +19,7 @@ contextBridge.exposeInMainWorld('versions', {
     // we can also expose variables, not just functions
     ping: () => ipcRenderer.invoke('ping')
 })
+
+contextBridge.exposeInMainWorld('electron', {
+    setTitle: (title) => ipcRenderer.send('set-title', title),
+})

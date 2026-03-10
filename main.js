@@ -17,6 +17,17 @@ app.whenReady().then(() => {
 
     ipcMain.handle('ping', () => 'pong')
 
+
+
+    const handleSetTitle = (event, title) => {
+        console.log('event from ipcRender', event)
+        const webContents = event.sender
+        const win = BrowserWindow.fromWebContents(webContents)
+        console.log('win', win)
+        win.setTitle(title)
+    }
+    ipcMain.on('set-title', handleSetTitle)
+
     createWindow()
 
     app.on('activate', () => {
