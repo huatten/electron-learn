@@ -1,5 +1,6 @@
 const {contextBridge,ipcRenderer} = require('electron')
-
+const fs = require('fs')
+console.log('fs', fs)
 /**
  * 1. 引入 contextBridge 用于安全地在主进程和渲染进程之间暴露 暴露版本信息
  * 2. 通过 contextBridge.exposeInMainWorld 方法，将一个名为 versions 的对象注入到渲染进程的全局作用域中。

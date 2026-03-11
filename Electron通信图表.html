@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electron 通信方式交互图</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1, h2, h3 {
+            color: #333;
+            margin-top: 30px;
+        }
+        h1 {
+            text-align: center;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .diagram-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .code-block {
+            background-color: #f4f4f4;
+            border-left: 4px solid #4CAF50;
+            padding: 10px 15px;
+            margin: 10px 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .note {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .note-title {
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Electron 三种通信方式交互图</h1>
+
+    <h2>1. 渲染进程 → 主进程（单向通信）</h2>
+    <h3>场景：渲染进程请求主进程修改窗口标题</h3>
+
+    <div class="diagram-container">
+        <div class="mermaid">
+            sequenceDiagram
+                participant 用户
+                participant 渲染进程
+                participant 预加载脚本
+                participant 主进程
+                participant 系统API
+
+                用户->>渲染进程: 点击按钮，输入新标题
+                渲染进程->>预加载脚本: window.electron.setTitle(title)
+                预加载脚本->>主进程: ipcRenderer.send('set-title', title)
+                主进程->>主进程: 处理set-title事件
+                主进程->>系统API: win.setTitle(title)
+                系统API->>系统API: 更新窗口标题
+
+                Note over 渲染进程,系统API: 单向通信：渲染进程发送，主进程接收处理
+        </div>
+    </div>
+
+    <div class="code-block">
+        <strong>代码对应关系：</strong><br>
+        • 渲染进程：window.electron.setTitle(inputElement.value)<br>
+        • 预加载脚本：ipcRenderer.send('set-title', title)<br>
+        • 主进程：ipcMain.on('set-title', handleSetTitle)
+    </div>
+
+    <hr>
+
+    <h2>2. 渲染进程 ↔ 主进程（双向通信）</h2>
+    <h3>场景：渲染进程请求主进程写入文件并返回结果</h3>
+
+    <div class="diagram-container">
+        <div class="mermaid">
+            sequenceDiagram
+                participant 用户
+                participant 渲染进程
+                participant 预加载脚本
+                participant 主进程
+                participant 文件系统
+
+                用户->>渲染进程: 输入内容，点击写入文件
+                渲染进程->>预加载脚本: window.electron.writeFile(content)
+                预加载脚本->>主进程: ipcRenderer.invoke('write-file', content)
+                主进程->>文件系统: fs.writeFile('test.txt', content)
+                主进程->>文件系统: fs.stat('test.txt')
+                文件系统-->>主进程: 返回文件状态
+                主进程-->>预加载脚本: 返回文件大小
+                预加载脚本-->>渲染进程: 返回Promise结果
+                渲染进程->>渲染进程: 更新UI显示文件长度
+
+                Note over 渲染进程,文件系统: 双向通信：渲染进程请求，主进程处理并返回结果
+        </div>
+    </div>
+
+    <div class="code-block">
+        <strong>代码对应关系：</strong><br>
+        • 渲染进程：await window.electron.writeFile(content)<br>
+        • 预加载脚本：ipcRenderer.invoke('write-file', content)<br>
+        • 主进程：ipcMain.handle('write-file', handleWriteFile)
+    </div>
+
+    <hr>
+
+    <h2>3. 主进程 → 渲染进程（单向通信）</h2>
+    <h3>场景：主进程定时向渲染进程推送计数器更新</h3>
+
+    <div class="diagram-container">
+        <div class="mermaid">
+            sequenceDiagram
+                participant 定时器
+                participant 主进程
+                participant 窗口
+                participant 预加载脚本
+                participant 渲染进程
+
+                Note over 主进程: 窗口创建完成
+                主进程->>窗口: win.webContents.on('did-finish-load')
+                主进程->>窗口: webContents.send('update-counter', 1)
+                窗口->>预加载脚本: 触发update-counter事件
+                预加载脚本->>渲染进程: 执行注册的回调函数
+                渲染进程->>渲染进程: 更新计数器显示
+
+                loop 每秒执行
+                    定时器->>主进程: setInterval触发
+                    主进程->>窗口: webContents.send('update-counter', count++)
+                    窗口->>预加载脚本: 触发update-counter事件
+                    预加载脚本->>渲染进程: 执行回调更新UI
+                end
+
+                Note over 定时器,渲染进程: 单向通信：主进程主动推送，渲染进程接收
+        </div>
+    </div>
+
+    <div class="code-block">
+        <strong>代码对应关系：</strong><br>
+        • 主进程：win.webContents.send('update-counter', count)<br>
+        • 预加载脚本：ipcRenderer.on('update-counter', callback)<br>
+        • 渲染进程：window.electron.onUpdateCounter((value) => {...})
+    </div>
+
+    <hr>
+
+    <h2>通信方式对比</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>通信方式</th>
+                <th>方向</th>
+                <th>方法</th>
+                <th>适用场景</th>
+                <th>特点</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>渲染→主</td>
+                <td>单向</td>
+                <td>ipcRenderer.send() + ipcMain.on()</td>
+                <td>发送指令、通知</td>
+                <td>简单快速，无需回复</td>
+            </tr>
+            <tr>
+                <td>渲染↔主</td>
+                <td>双向</td>
+                <td>ipcRenderer.invoke() + ipcMain.handle()</td>
+                <td>请求数据、执行操作</td>
+                <td>Promise异步，有返回值</td>
+            </tr>
+            <tr>
+                <td>主→渲染</td>
+                <td>单向</td>
+                <td>webContents.send() + ipcRenderer.on()</td>
+                <td>推送更新、事件通知</td>
+                <td>主进程主动，渲染被动接收</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="note">
+        <div class="note-title">⚠️ 重要注意事项</div>
+        <ol>
+            <li><strong>时机问题</strong>：主进程向渲染进程发送消息时，必须确保渲染进程已准备好（使用did-finish-load事件）</li>
+            <li><strong>安全限制</strong>：不能直接暴露Node.js API给渲染进程，必须通过预加载脚本和contextBridge暴露必要功能</li>
+            <li><strong>生命周期</strong>：窗口关闭后不能继续发送消息，需要正确处理窗口重建时的监听器</li>
+            <li><strong>性能考虑</strong>：避免频繁的双向通信，大数据传输考虑使用其他方式</li>
+        </ol>
+    </div>
+
+    <script>
+        // 初始化Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            sequence: {
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35
+            }
+        });
+    </script>
+</body>
+</html>
