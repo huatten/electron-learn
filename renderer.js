@@ -17,3 +17,9 @@ handleElement.addEventListener('click', async () => {
     const strLength = await window.electron.writeFile(iptElement.value)
     lenElement.innerText = strLength
 })
+
+const counterElement = document.getElementById('counter');
+window.electron.onUpdateCounter((value) => {
+    console.log('update counter', value)
+    counterElement.innerText = value
+})

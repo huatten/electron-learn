@@ -12,6 +12,8 @@ const createWindow = () => {
 
     win.loadFile('index.html')
     win.webContents.openDevTools()
+
+    return win  // ✅ 返回窗口对象
 }
 
 app.whenReady().then(() => {
@@ -36,7 +38,16 @@ app.whenReady().then(() => {
 
     ipcMain.handle('write-file',handleWriteFile)
 
-    createWindow()
+    let count = 0
+    const win = createWindow()
+    // 等待页面加载完成后立即发送第一条消息
+    win.webContents.on('did-finish-load', () => {
+        win.webContents.send('update-counter', count)
+    })
+    setInterval(() => {
+        count++
+        win.webContents.send('update-counter', count)
+    },1000)
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
