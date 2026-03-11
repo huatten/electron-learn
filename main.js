@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron/main')
 const path = require('node:path')
+const fs = require('node:fs/promises')
 const createWindow = () => {
     const win = new BrowserWindow({
         width: 800,
@@ -15,10 +16,6 @@ const createWindow = () => {
 
 app.whenReady().then(() => {
 
-    ipcMain.handle('ping', () => 'pong')
-
-
-
     const handleSetTitle = (event, title) => {
         console.log('event from ipcRender', event)
         const webContents = event.sender
@@ -27,6 +24,17 @@ app.whenReady().then(() => {
         win.setTitle(title)
     }
     ipcMain.on('set-title', handleSetTitle)
+
+
+    const handleWriteFile = async (event, content) => {
+        console.log('content', content)
+        await fs.writeFile('test.txt', content)
+        const stats = await fs.stat('test.txt')
+        console.log('stats', stats)
+        return stats.size
+    }
+
+    ipcMain.handle('write-file',handleWriteFile)
 
     createWindow()
 

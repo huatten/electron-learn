@@ -9,9 +9,11 @@
 <body>
     <h1>Hello from Electron renderer!</h1>
      <strong id="version"></strong>
-    <h2 id="receive"></h2>
-
+    <hr>
     <input id="input" type="text" placeholder="输入标题"/> <button id="btn">修改标题</button>
+    <hr>
+    <input id="ipt" type="text" placeholder="输入内容"/> <button id="handle">写入文件</button>
+    <div>文件长度：<span id="len"></span></div>
 </body>
 <script src="./renderer.js"></script>
 </html>

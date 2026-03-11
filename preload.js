@@ -16,10 +16,9 @@ contextBridge.exposeInMainWorld('versions', {
     node: () => process.versions.node,
     chrome: () => process.versions.chrome,
     electron: () => process.versions.electron,
-    // we can also expose variables, not just functions
-    ping: () => ipcRenderer.invoke('ping')
 })
 
 contextBridge.exposeInMainWorld('electron', {
     setTitle: (title) => ipcRenderer.send('set-title', title),
+    writeFile: ( content) => ipcRenderer.invoke('write-file', content),
 })
